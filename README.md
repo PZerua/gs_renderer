@@ -1,6 +1,6 @@
-# wgpuEngineSample
+# Gaussian Splatting renderer
 
-This repository is a sample project using [wgpuEngine](https://github.com/upf-gti/wgpuEngine), the engine used in [Rooms](https://github.com/upf-gti/rooms).
+Gaussian Splatting renderer in [wgpuEngine](https://github.com/upf-gti/wgpuEngine) 
 
 ## How to build
 
@@ -8,7 +8,6 @@ You will need to install the following tools:
 
 - [CMake](https://cmake.org/download/)
 - [Python](https://www.python.org/) (added to your PATH)
-- [Vulkan SDK](https://vulkan.lunarg.com/)
 
 ### Desktop
 
