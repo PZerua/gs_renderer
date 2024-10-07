@@ -3,24 +3,41 @@
 #include "includes.h"
 
 #include "graphics/uniform.h"
+#include "graphics/pipeline.h"
 
 #include "framework/nodes/node_3d.h"
 
-struct sGSData {
+class Shader;
+
+struct sGSRenderData {
     glm::vec3 position;
-    glm::quat rotation;
-    glm::vec3 color;
-    glm::vec3 scale;
-    float opacity;
+    uint32_t id;
 };
 
 class GSNode : public Node3D {
 
-    uint32_t gs_count = 0;
-    WGPUBuffer gs_buffer = nullptr;
+    uint32_t splat_count = 0;
+    uint32_t padded_splat_count = 0;
+    uint32_t workgroup_size = 0;
 
+    WGPUBuffer render_buffer = nullptr;
+
+    // Render
     Uniform model_uniform;
-    WGPUBindGroup model_bindgroup;
+    Uniform centroid_uniform;
+    Uniform basis_uniform;
+    Uniform color_uniform;
+    WGPUBindGroup render_bindgroup;
+
+    // Covariance
+    Uniform rotations_uniform;
+    Uniform scales_uniform;
+    Uniform covariance_uniform;
+    Uniform splat_count_uniform;
+    WGPUBindGroup covariance_bindgroup;
+
+    Shader* covariance_shader = nullptr;
+    Pipeline covariance_pipeline;
 
 public:
 
@@ -29,22 +46,27 @@ public:
     GSNode();
     ~GSNode();
 
+    void initialize(uint32_t splat_count);
+
     virtual void render() override;
     virtual void update(float delta_time) override;
 
     void render_gui() override;
 
-    WGPUBuffer get_gs_buffer() {
-        return gs_buffer;
+    WGPUBuffer get_render_buffer() {
+        return render_buffer;
     }
 
-    WGPUBindGroup get_model_bindgroup() {
-        return model_bindgroup;
+    WGPUBindGroup get_render_bindgroup() {
+        return render_bindgroup;
     }
 
-    void create_gs_data_buffer(const std::vector<sGSData> gs_data);
+    void set_render_buffers(const std::vector<glm::vec3>& positions, const std::vector<glm::vec4>& colors);
+    void set_covariance_buffers(const std::vector<glm::quat>& rotations, const std::vector<glm::vec3>& scales);
 
-    uint32_t get_gs_count();
-    uint32_t get_gs_bytes_size();
+    void calculate_covariance();
+
+    uint32_t get_splat_count();
+    uint32_t get_splats_render_bytes_size();
 
 };

@@ -19,8 +19,6 @@ int GSRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     clear_color = glm::vec4(0.22f, 0.22f, 0.22f, 1.0);
 
-    gs_shader = RendererStorage::get_shader("data/shaders/gs_render.wgsl");
-
     WGPUTextureFormat swapchain_format = is_openxr_available ? webgpu_context->xr_swapchain_format : webgpu_context->swapchain_format;
 
     WGPUColorTargetState color_target = {};
@@ -30,7 +28,29 @@ int GSRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     PipelineDescription desc = { .topology = WGPUPrimitiveTopology_PointList };
 
-    gs_pipeline.create_render(gs_shader, color_target, desc);
+    gs_render_shader = RendererStorage::get_shader("data/shaders/gs_render.wgsl");
+    gs_render_pipeline.create_render_async(gs_render_shader, color_target, desc);
+
+    gs_basis_shader = RendererStorage::get_shader("data/shaders/gs_basis.wgsl");
+    gs_basis_pipeline.create_compute_async(gs_basis_shader);
+
+    gs_scan_shader = RendererStorage::get_shader("data/shaders/gs_scan.wgsl");
+    gs_scan_pipeline.create_compute_async(gs_scan_shader);
+
+    gs_scan_sum_shader = RendererStorage::get_shader("data/shaders/gs_scan_sum.wgsl");
+    gs_scan_sum_pipeline.create_compute_async(gs_scan_sum_shader);
+
+    gs_shuffle_shader = RendererStorage::get_shader("data/shaders/gs_shuffle.wgsl");
+    gs_shuffle_pipeline.create_compute_async(gs_shuffle_shader);
+
+    xr_gs_camera_buffer_stride = std::max(static_cast<uint32_t>(sizeof(sGSCameraData)), required_limits.limits.minUniformBufferOffsetAlignment);
+
+    gs_camera_data_uniform.data = webgpu_context->create_buffer(xr_gs_camera_buffer_stride * EYE_COUNT, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform, nullptr, "gs_camera_buffer");
+    gs_camera_data_uniform.binding = 0;
+    gs_camera_data_uniform.buffer_size = sizeof(sGSCameraData);
+
+    std::vector<Uniform*> uniforms = { &gs_camera_data_uniform };
+    gs_camera_data_bindgroup = webgpu_context->create_bind_group(uniforms, gs_render_shader, 1);
 
     set_custom_pass_user_data(this);
 
@@ -63,21 +83,24 @@ void GSRenderer::render_gs(WGPURenderPassEncoder render_pass, uint32_t camera_st
 
     Scene* scene = gs_engine->get_main_scene();
 
+    wgpuQueueWriteBuffer(webgpu_context->device_queue, std::get<WGPUBuffer>(gs_camera_data_uniform.data), 0, &gs_camera_data, sizeof(sGSCameraData));
+
     for (Node* node : scene->get_nodes()) {
 
         GSNode* gs_node = dynamic_cast<GSNode*>(node);
 
         if (gs_node) {
 
-            gs_pipeline.set(render_pass);
+            gs_render_pipeline.set(render_pass);
 
-            wgpuRenderPassEncoderSetBindGroup(render_pass, 0, gs_node->get_model_bindgroup(), 0, nullptr);
-            wgpuRenderPassEncoderSetBindGroup(render_pass, 1, render_bind_group_camera, 1, &camera_stride_offset);
+            wgpuRenderPassEncoderSetBindGroup(render_pass, 0, gs_node->get_render_bindgroup(), 0, nullptr);
+            wgpuRenderPassEncoderSetBindGroup(render_pass, 1, gs_camera_data_bindgroup, 1, &camera_stride_offset);
 
-            wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, gs_node->get_gs_buffer(), 0, gs_node->get_gs_bytes_size());
+            wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, gs_node->get_render_buffer(), 0, gs_node->get_splats_render_bytes_size());
 
-            // Submit indirect drawcalls
-            wgpuRenderPassEncoderDraw(render_pass, gs_node->get_gs_count(), 1, 0, 0);
+            for (int i = gs_node->get_splat_count() - 1; i >= 0; --i) {
+                wgpuRenderPassEncoderDraw(render_pass, 4, 1, 0, i);
+            }
         }
     }
 }
