@@ -13,7 +13,8 @@ const n : u32 = 512;
 @compute @workgroup_size(256)
 fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
     @builtin(local_invocation_id) LocalInvocationID: vec3<u32>,
-    @builtin(workgroup_id) WorkgroupID: vec3<u32>) {
+    @builtin(workgroup_id) WorkgroupID: vec3<u32>) 
+{
     var thid:u32 = LocalInvocationID.x;
     var globalThid:u32 = GlobalInvocationID.x;
     var mask:u32 = u32(3) << (radixMaskId << 1);

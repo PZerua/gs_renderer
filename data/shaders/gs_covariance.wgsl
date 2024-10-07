@@ -1,7 +1,7 @@
-@binding(0) @group(0) var<storage, read> rotation :array<vec4<f32>>;
-@binding(1) @group(0) var<storage, read> scaling :array<vec3<f32>>;
-@binding(2) @group(0) var<storage, read_write> covariance: array<vec3<f32>>;
-@binding(3) @group(0) var<uniform> splatCount: u32;
+ @group(0) @binding(0) var<storage, read> rotation :array<vec4<f32>>;
+ @group(0) @binding(1) var<storage, read> scaling :array<vec3<f32>>;
+ @group(0) @binding(2) var<storage, read_write> covariance: array<vec3<f32>>;
+ @group(0) @binding(6) var<uniform> splat_count: u32;
 
 fn quat2mat(quat: vec4<f32>) -> mat3x3<f32>
 {
@@ -56,7 +56,7 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
     @builtin(local_invocation_id) LocalInvocationID: vec3<u32>,
     @builtin(workgroup_id) WorkgroupID: vec3<u32>) 
 {
-    if (GlobalInvocationID.x < splatCount) {
+    if (GlobalInvocationID.x < splat_count) {
 
         var rotationMatrix: mat3x3<f32> = quat2mat(rotation[GlobalInvocationID.x]);
         var scalingMatrix: mat3x3<f32> = scaling2mat(scaling[GlobalInvocationID.x]);

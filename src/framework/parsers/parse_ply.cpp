@@ -33,8 +33,6 @@ bool parse_ply(const char* ply_path, std::vector<Node*>& entities)
     std::vector<float> f_dc_1 = ply_file.getElement("vertex").getProperty<float>("f_dc_1");
     std::vector<float> f_dc_2 = ply_file.getElement("vertex").getProperty<float>("f_dc_2");
 
-    std::vector<sGSRenderData> gs_data;
-
     std::vector<glm::vec3> positions;
     std::vector<glm::vec4> colors;
 

@@ -1,24 +1,31 @@
-// given centroids, covariance, modelView, projection;
+// given centroids, covariance, camera_data.view, camera_data.projection;
 // compute 2d basis, distance
-@binding(0) @group(0) var<storage, read> centroid :array<vec3<f32>>;
-@binding(1) @group(0) var<storage, read> covariance: array<vec3<f32>>;
-@binding(2) @group(0) var<storage, read_write> basis: array<vec4<f32>>;
-@binding(3) @group(0) var<storage, read_write> distance: array<u32>;
-@binding(4) @group(0) var<storage, read_write> id: array<u32>;
-@binding(5) @group(0) var<uniform> splatCount: u32;
-@binding(6) @group(0) var<storage, read_write> readback: array<vec4<f32>>;
 
-@binding(0) @group(1) var<uniform> modelView: mat4x4<f32>;
-@binding(1) @group(1) var<uniform> projection: mat4x4<f32>;
-@binding(2) @group(1) var<uniform> screen: vec2<f32>;
+struct CameraData {
+    view : mat4x4f,
+    projection : mat4x4f,
+    screen_size : vec2f,
+    dummy : vec2f
+};
+
+@group(0) @binding(0) var<uniform> model : mat4x4f;
+@group(0) @binding(1) var<storage, read> centroid :array<vec3<f32>>;
+@group(0) @binding(2) var<storage, read> covariance: array<vec3<f32>>;
+@group(0) @binding(3) var<storage, read_write> basis: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> distance: array<u32>;
+@group(0) @binding(5) var<storage, read_write> id: array<u32>;
+@group(0) @binding(6) var<uniform> splatCount: u32;
+
+#dynamic @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
 @compute @workgroup_size(256)
 fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
     @builtin(local_invocation_id) LocalInvocationID: vec3<u32>,
-    @builtin(workgroup_id) WorkgroupID: vec3<u32>) {
-        var gid = GlobalInvocationID.x;
+    @builtin(workgroup_id) WorkgroupID: vec3<u32>) 
+{
+    var gid = GlobalInvocationID.x;
 
-        if (gid < splatCount) {
+    if (gid < splatCount) {
         var covarianceFirst = covariance[gid*2];
         var covarianceSecond = covariance[gid*2+1];
 
@@ -33,16 +40,18 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
             covarianceSecond.y,
             covarianceSecond.z);
 
-        var modelView3x3:mat3x3<f32> = transpose( mat3x3<f32>(modelView[0].xyz, modelView[1].xyz, modelView[2].xyz));
+        var model_view : mat4x4<f32> = camera_data.view * model;
 
-        var cameraFocalLengthX:f32 = projection[0][0] *
-        screen.x * 0.5;
-        var cameraFocalLengthY:f32 = projection[1][1] *
-        screen.y * 0.5;
+        var model_view_3x3 : mat3x3<f32> = transpose(mat3x3<f32>(model_view[0].xyz, model_view[1].xyz, model_view[2].xyz));
+
+        var cameraFocalLengthX:f32 = camera_data.projection[0][0] *
+        camera_data.screen_size.x * 0.5;
+        var cameraFocalLengthY:f32 = camera_data.projection[1][1] *
+        camera_data.screen_size.y * 0.5;
 
         var center:vec4<f32> = vec4(centroid[gid], 1.0);
 
-        var viewCenter:vec4<f32> =   modelView * center;
+        var viewCenter:vec4<f32> = model_view * center;
         var s:f32 = 1.0 / (viewCenter.z * viewCenter.z);
 
         var J = mat3x3<f32>(
@@ -52,7 +61,7 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
         );
 
 
-        var T:mat3x3<f32> =  modelView3x3 * J ;
+        var T:mat3x3<f32> =  model_view_3x3  * J ;
 
         var T_t:mat3x3<f32> = transpose(T);
 
@@ -79,8 +88,7 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
 
         var basisVector1:vec2<f32> = eigenVector1 * min(sqrt(eigenValue1)*4, maxSplatSize);
         var basisVector2:vec2<f32> = eigenVector2 * min(sqrt(eigenValue2)*4, maxSplatSize);
-        readback[gid] = vec4<f32>(basisVector1,basisVector2);
-        var dis:vec4<f32> = projection * modelView * center;
+        var dis:vec4<f32> = camera_data.projection * model_view * center;
         distance[gid] = u32(dis.z / dis.w * f32(0xFFFFFFFF >> 8));     
         basis[gid] = vec4<f32>(basisVector1, basisVector2);
     }

@@ -10,7 +10,7 @@
 class Shader;
 
 struct sGSRenderData {
-    glm::vec3 position;
+    glm::vec2 position;
     uint32_t id;
 };
 
@@ -21,6 +21,7 @@ class GSNode : public Node3D {
     uint32_t workgroup_size = 0;
 
     WGPUBuffer render_buffer = nullptr;
+    WGPUBuffer ids_buffer_ping_pong[2];
 
     // Render
     Uniform model_uniform;
@@ -36,8 +37,29 @@ class GSNode : public Node3D {
     Uniform splat_count_uniform;
     WGPUBindGroup covariance_bindgroup;
 
+    // Basis
+    WGPUBuffer distances_ping_pong[2];
+
+    Uniform basis_distances_uniform;
+    Uniform ids_uniform;
+    WGPUBindGroup basis_uniform_bindgroup;
+
+    // Sort
+    Uniform distances_uniforms[4];
+    Uniform ids_buffer_uniforms[4];
+    Uniform temp_uniform;
+    Uniform output_sum_array_uniform;
+    Uniform sum_array_uniform;
+
+    WGPUBindGroup scan_bindgroup_ping_pong[2];
+
     Shader* covariance_shader = nullptr;
     Pipeline covariance_pipeline;
+
+    Shader* basis_shader = nullptr;
+    Pipeline basis_pipeline;
+
+    WGPUBindGroup gs_camera_data_bindgroup;
 
 public:
 
@@ -57,6 +79,10 @@ public:
         return render_buffer;
     }
 
+    WGPUBuffer get_ids_buffer() {
+        return ids_buffer_ping_pong[0];
+    }
+
     WGPUBindGroup get_render_bindgroup() {
         return render_bindgroup;
     }
@@ -64,9 +90,14 @@ public:
     void set_render_buffers(const std::vector<glm::vec3>& positions, const std::vector<glm::vec4>& colors);
     void set_covariance_buffers(const std::vector<glm::quat>& rotations, const std::vector<glm::vec3>& scales);
 
+    void calculate_basis();
     void calculate_covariance();
 
+    WGPUBindGroup* get_scan_bindgroups() { return scan_bindgroup_ping_pong; }
+
     uint32_t get_splat_count();
+    uint32_t get_padded_splat_count();
     uint32_t get_splats_render_bytes_size();
+    uint32_t get_ids_render_bytes_size();
 
 };

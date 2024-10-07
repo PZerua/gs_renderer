@@ -1,20 +1,21 @@
 
 struct CameraData {
-    view_projection : mat4x4f,
+    view : mat4x4f,
+    projection : mat4x4f,
     screen_size : vec2f,
     dummy : vec2f
 };
 
 @group(0) @binding(0) var<uniform> model : mat4x4f;
 @group(0) @binding(1) var<storage, read> centroid : array<vec3<f32>>;
-@group(0) @binding(2) var<storage, read> basis : array<vec4<f32>>;
-@group(0) @binding(3) var<storage, read> color : array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> color : array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read> basis : array<vec4<f32>>;
 
 #dynamic @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
 struct VertexInput {
     @location(0) position: vec2<f32>,
-    @location(1) id: u32
+    #unique instance @location(1) id: u32
 };
 
 struct VertexOutput {
@@ -28,12 +29,10 @@ fn vs_main(in: VertexInput) -> VertexOutput
 {
     var out: VertexOutput;
 
-    var clip_center:vec4<f32> = camera_data.view_projection * model * vec4<f32>(centroid[in.id],1.0);
+    var clip_center:vec4<f32> = camera_data.projection * camera_data.view * model * vec4<f32>(centroid[in.id],1.0);
     var ndc_center:vec3<f32> = clip_center.xyz / clip_center.w;
     var basis_viewport:vec2<f32> = vec2<f32>(2.0/camera_data.screen_size.x, 2.0/camera_data.screen_size.y);
     var ndc_offset:vec2<f32> = vec2(in.position.x * basis[in.id].xy + in.position.y * basis[in.id].zw) * basis_viewport;
-
-    // readback[in.id] = vec4(ndc_offset, 0.0, 0.0);
 
     out.coord = in.position;
     out.color = color[in.id];
