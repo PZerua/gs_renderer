@@ -196,11 +196,6 @@ void GSNode::update(float delta_time)
     webgpu_context->update_buffer(std::get<WGPUBuffer>(model_uniform.data), 0, &get_global_model()[0], sizeof(glm::mat4x4));
 }
 
-void GSNode::render_gui()
-{
-
-}
-
 void GSNode::set_covariance_buffers(const std::vector<glm::quat>& rotations, const std::vector<glm::vec4>& scales)
 {
     WebGPUContext* webgpu_context = Renderer::instance->get_webgpu_context();

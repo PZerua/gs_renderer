@@ -1,6 +1,7 @@
 #include "parse_ply.h"
 
 #include "framework/nodes/gs_node.h"
+#include "framework/math/math_utils.h"
 
 #include "happly.h"
 
@@ -17,6 +18,10 @@ bool parse_ply(const char* ply_path, std::vector<Node*>& entities)
 
     gs_node->initialize(splats_count);
     gs_node->set_name("gs_node");
+
+    glm::quat default_quad = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
+
+    gs_node->set_rotation(glm::rotate(default_quad, static_cast<float>(PI), glm::vec3(1.0, 0.0, 0.0)));
 
     std::vector<float> opacity_v = ply_file.getElement("vertex").getProperty<float>("opacity");
     std::vector<float> scale0 = ply_file.getElement("vertex").getProperty<float>("scale_0");

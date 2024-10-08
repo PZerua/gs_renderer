@@ -80,8 +80,6 @@ public:
     virtual void render() override;
     virtual void update(float delta_time) override;
 
-    void render_gui() override;
-
     WGPUBuffer get_render_buffer() {
         return render_buffer;
     }

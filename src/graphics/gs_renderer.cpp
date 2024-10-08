@@ -74,7 +74,7 @@ int GSRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     set_custom_pass_user_data(this);
 
-    custom_post_opaque_pass = [](void* user_data, WGPURenderPassEncoder render_pass, uint32_t camera_stride_offset = 0) {
+    custom_post_transparent_pass = [](void* user_data, WGPURenderPassEncoder render_pass, uint32_t camera_stride_offset = 0) {
         GSRenderer* gs_renderer = reinterpret_cast<GSRenderer*>(user_data);
         gs_renderer->render_gs(render_pass, camera_stride_offset);
     };
