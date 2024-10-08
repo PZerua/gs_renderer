@@ -1,8 +1,8 @@
 @binding(0) @group(0) var<storage, read> input : array<u32>;
 @binding(1) @group(0) var<storage, read_write> sums: array<u32>;
-@binding(2) @group(0) var<storage, read_write> output :array<vec4<u32>>;
+@binding(2) @group(0) var<storage, read_write> output : array<vec4<u32>>;
 
-@binding(0) @group(1) var<uniform> radixMaskId:u32;
+@binding(0) @group(1) var<uniform> radixMaskId : u32;
 
 const bank_size : u32 = 32;
 const n : u32 = 512;

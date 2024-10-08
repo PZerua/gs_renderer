@@ -7,6 +7,7 @@
 #include "framework/nodes/gs_node.h"
 
 #include "framework/camera/camera.h"
+#include "framework/camera/orbit_camera.h"
 
 #include "engine/scene.h"
 
@@ -78,6 +79,16 @@ int GSRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
         gs_renderer->render_gs(render_pass, camera_stride_offset);
     };
 
+    if (camera) {
+        delete camera;
+    }
+
+    camera = new OrbitCamera();
+    camera->set_perspective(glm::radians(45.0f), webgpu_context->render_width / static_cast<float>(webgpu_context->render_height), z_near, z_far);
+    camera->look_at(glm::vec3(0.0f, 0.2f, 0.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    camera->set_mouse_sensitivity(0.003f);
+    camera->set_speed(0.5f);
+
     return 0;
 }
 
@@ -128,48 +139,54 @@ void GSRenderer::sort_splats(GSNode* gs_node)
 
     uint32_t chunk_count = ceil(static_cast<float>(gs_node->get_padded_splat_count() / 512.0f));
 
-    //for (uint32_t i = 0; i < 16; ++i) {
-    //    WGPUComputePassEncoder compute_pass = wgpuCommandEncoderBeginComputePass(command_encoder, &compute_pass_desc);
+    WGPUBindGroup* radix_id_bind_groups = gs_node->get_radix_id_bindgroups();
 
-    //    // pass 1
-    //    gs_scan_pipeline.set(compute_pass);
+    for (uint32_t i = 0; i < 16; ++i) {
+        WGPUComputePassEncoder compute_pass = wgpuCommandEncoderBeginComputePass(command_encoder, &compute_pass_desc);
 
-    //    WGPUBindGroup* scan_bind_groups = gs_node->get_scan_bindgroups();
+        // pass 1
+        gs_scan_pipeline.set(compute_pass);
 
-    //    if (i % 2 == 0) {
-    //        wgpuComputePassEncoderSetBindGroup(compute_pass, 0, scan_bind_groups[0], 0, nullptr);
-    //    }
-    //    else {
-    //        wgpuComputePassEncoderSetBindGroup(compute_pass, 0, scan_bind_groups[1], 0, nullptr);
-    //    }
+        WGPUBindGroup* scan_bind_groups = gs_node->get_scan_bindgroups();
 
-    //    wgpuComputePassEncoderSetBindGroup(compute_pass, 1, );
+        if (i % 2 == 0) {
+            wgpuComputePassEncoderSetBindGroup(compute_pass, 0, scan_bind_groups[0], 0, nullptr);
+        }
+        else {
+            wgpuComputePassEncoderSetBindGroup(compute_pass, 0, scan_bind_groups[1], 0, nullptr);
+        }
 
-    //    wgpuComputePassEncoderDispatchWorkgroups(compute_pass, chunk_count, 1, 1);
+        wgpuComputePassEncoderSetBindGroup(compute_pass, 1, radix_id_bind_groups[i], 0, nullptr);
 
+        wgpuComputePassEncoderDispatchWorkgroups(compute_pass, chunk_count, 1, 1);
 
-    //    // pass 2
-    //    gs_scan_sum_pipeline.set(compute_pass);
-    //    wgpuComputePassEncoderSetBindGroup(compute_pass, 0, );
-    //    wgpuComputePassEncoderDispatchWorkgroups(compute_pass, 1, 1, 1);
+        // pass 2
 
-    //    // pass 3
-    //    gs_shuffle_pipeline.set(compute_pass);
+        WGPUBindGroup scan_sum_bind_group = gs_node->get_scan_sum_bindgroup();
 
-    //    if (i % 2 == 0) {
-    //        wgpuComputePassEncoderSetBindGroup(compute_pass, 0, );
-    //    }
-    //    else {
-    //        wgpuComputePassEncoderSetBindGroup(compute_pass, 0, );
-    //    }
+        gs_scan_sum_pipeline.set(compute_pass);
+        wgpuComputePassEncoderSetBindGroup(compute_pass, 0, scan_sum_bind_group, 0, nullptr);
+        wgpuComputePassEncoderDispatchWorkgroups(compute_pass, 1, 1, 1);
 
-    //    wgpuComputePassEncoderSetBindGroup(compute_pass, 1, );
+        // pass 3
+        WGPUBindGroup* shuffle_groups = gs_node->get_shuffle_bindgroups();
 
-    //    wgpuComputePassEncoderDispatchWorkgroups(compute_pass, chunk_count, 1, 1);
+        gs_shuffle_pipeline.set(compute_pass);
 
-    //    wgpuComputePassEncoderEnd(compute_pass);
-    //    wgpuComputePassEncoderRelease(compute_pass);
-    //}
+        if (i % 2 == 0) {
+            wgpuComputePassEncoderSetBindGroup(compute_pass, 0, shuffle_groups[0], 0, nullptr);
+        }
+        else {
+            wgpuComputePassEncoderSetBindGroup(compute_pass, 0, shuffle_groups[1], 0, nullptr);
+        }
+
+        wgpuComputePassEncoderSetBindGroup(compute_pass, 1, radix_id_bind_groups[i], 0, nullptr);
+
+        wgpuComputePassEncoderDispatchWorkgroups(compute_pass, chunk_count, 1, 1);
+
+        wgpuComputePassEncoderEnd(compute_pass);
+        wgpuComputePassEncoderRelease(compute_pass);
+    }
 }
 
 void GSRenderer::render_gs(WGPURenderPassEncoder render_pass, uint32_t camera_stride_offset)
@@ -192,7 +209,7 @@ void GSRenderer::render_gs(WGPURenderPassEncoder render_pass, uint32_t camera_st
             wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, gs_node->get_render_buffer(), 0, gs_node->get_splats_render_bytes_size());
             wgpuRenderPassEncoderSetVertexBuffer(render_pass, 1, gs_node->get_ids_buffer(), 0, gs_node->get_ids_render_bytes_size());
 
-            for (int i = gs_node->get_splat_count() - 1; i >= 0; --i) {
+            for (int i = 0; i < gs_node->get_splat_count(); ++i) {
                 wgpuRenderPassEncoderDraw(render_pass, 4, 1, 0, i);
             }
         }

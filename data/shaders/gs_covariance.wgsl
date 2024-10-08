@@ -1,5 +1,5 @@
  @group(0) @binding(0) var<storage, read> rotation :array<vec4<f32>>;
- @group(0) @binding(1) var<storage, read> scaling :array<vec3<f32>>;
+ @group(0) @binding(1) var<storage, read> scaling :array<vec4<f32>>;
  @group(0) @binding(2) var<storage, read_write> covariance: array<vec3<f32>>;
  @group(0) @binding(6) var<uniform> splat_count: u32;
 
@@ -59,7 +59,7 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
     if (GlobalInvocationID.x < splat_count) {
 
         var rotationMatrix: mat3x3<f32> = quat2mat(rotation[GlobalInvocationID.x]);
-        var scalingMatrix: mat3x3<f32> = scaling2mat(scaling[GlobalInvocationID.x]);
+        var scalingMatrix: mat3x3<f32> = scaling2mat(scaling[GlobalInvocationID.x].xyz);
         var T: mat3x3<f32> = rotationMatrix * scalingMatrix;
         var T_t: mat3x3<f32> = transpose(T);
         

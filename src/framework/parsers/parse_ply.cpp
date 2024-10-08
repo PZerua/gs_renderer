@@ -33,22 +33,23 @@ bool parse_ply(const char* ply_path, std::vector<Node*>& entities)
     std::vector<float> f_dc_1 = ply_file.getElement("vertex").getProperty<float>("f_dc_1");
     std::vector<float> f_dc_2 = ply_file.getElement("vertex").getProperty<float>("f_dc_2");
 
-    std::vector<glm::vec3> positions;
+    std::vector<glm::vec4> positions;
     std::vector<glm::vec4> colors;
 
     std::vector<glm::quat> rotations;
-    std::vector<glm::vec3> scales;
+    std::vector<glm::vec4> scales;
 
     for (uint32_t i = 0; i < splats_count; ++i)
     {
         const double SH_C0 = 0.28209479177387814;
 
-        glm::vec3 position = { x[i], y[i], z[i] };
+        glm::vec4 position = { x[i], y[i], z[i], 0.0f };
         float opacity = { (1.0f / (1.0f + exp(-opacity_v[i]))) };
         glm::vec4 color = { (0.5 + SH_C0 * f_dc_0[i]), (0.5 + SH_C0 * f_dc_1[i]), (0.5 + SH_C0 * f_dc_2[i]), opacity };
 
-        glm::quat rotation = { rot0[i], rot1[i], rot2[i], rot3[i] };
-        glm::vec3 scale =    { exp(scale0[i]), exp(scale1[i]), exp(scale2[i]) };
+        glm::quat rotation = { rot1[i], rot2[i], rot3[i], rot0[i] };
+        rotation = glm::normalize(rotation);
+        glm::vec4 scale =    { exp(scale0[i]), exp(scale1[i]), exp(scale2[i]), 0.0f };
 
         positions.push_back(position);
         colors.push_back(color);

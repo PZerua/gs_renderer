@@ -1,6 +1,6 @@
-@binding(0) @group(0) var<storage, read> input : array<u32>;
-@binding(1) @group(0) var<storage, read_write> output : array<u32>;
-@binding(2) @group(0) var<uniform> n : u32;
+@group(0) @binding(1) var<storage, read> input : array<u32>;
+@group(0) @binding(3) var<storage, read_write> output : array<u32>;
+@group(0) @binding(4) var<uniform> n : u32;
 
 const bank_size : u32 = 32;
 var<workgroup> temp: array<vec4<u32>, 532>; //workgroup array must have a fixed size;
