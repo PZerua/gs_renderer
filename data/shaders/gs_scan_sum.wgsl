@@ -49,10 +49,10 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
     { 
         temp[bank_conflict_free_idx(n - 1)]= vec4<u32>(0,0,0,0); 
     } // clear the last element  
-    workgroupBarrier();      
+    workgroupBarrier();
 
     for (var d:u32 = 1; d < n; d *= 2) // traverse down tree & build scan 
-    {      
+    {
         offset >>= 1;      
         if (thid < d)      
         { 
@@ -62,9 +62,9 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
             temp[bank_conflict_free_idx(ai)] = temp[bank_conflict_free_idx(bi)]; 
             temp[bank_conflict_free_idx(bi)] += t;       
         } 
-        workgroupBarrier();      
+        workgroupBarrier();
     }
-    
+
     if (thid < (n>>1)){
         output[(2*globalThid)*4] =   temp[bank_conflict_free_idx(2*thid)][0] +  input[(2*globalThid)*4]; 
         output[(2*globalThid)*4+1] = temp[bank_conflict_free_idx(2*thid)][1] +  input[(2*globalThid)*4+1]; 

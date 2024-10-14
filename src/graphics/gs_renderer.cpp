@@ -45,7 +45,7 @@ int GSRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     color_target.blend = blend_state;
 
-    desc.depth_write = false;
+    desc.depth_write = WGPUOptionalBool_False;
     desc.blending_enabled = true;
 
     gs_render_shader = RendererStorage::get_shader("data/shaders/gs_render.wgsl");
@@ -85,7 +85,7 @@ int GSRenderer::initialize(GLFWwindow* window, bool use_mirror_screen)
 
     camera = new OrbitCamera();
     camera->set_perspective(glm::radians(45.0f), webgpu_context->render_width / static_cast<float>(webgpu_context->render_height), z_near, z_far);
-    camera->look_at(glm::vec3(0.0f, 0.2f, 0.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    camera->look_at(glm::vec3(0.0f, 0.8f, 1.6f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     camera->set_mouse_sensitivity(0.003f);
     camera->set_speed(0.5f);
 
@@ -209,9 +209,7 @@ void GSRenderer::render_gs(WGPURenderPassEncoder render_pass, uint32_t camera_st
             wgpuRenderPassEncoderSetVertexBuffer(render_pass, 0, gs_node->get_render_buffer(), 0, gs_node->get_splats_render_bytes_size());
             wgpuRenderPassEncoderSetVertexBuffer(render_pass, 1, gs_node->get_ids_buffer(), 0, gs_node->get_ids_render_bytes_size());
 
-            for (int i = 0; i < gs_node->get_splat_count(); ++i) {
-                wgpuRenderPassEncoderDraw(render_pass, 4, 1, 0, i);
-            }
+            wgpuRenderPassEncoderDraw(render_pass, 4, gs_node->get_splat_count(), 0, 0);
         }
     }
 }

@@ -14,7 +14,7 @@ struct CameraData {
 @group(0) @binding(3) var<storage, read_write> basis: array<vec4<f32>>;
 @group(0) @binding(4) var<storage, read_write> distance: array<u32>;
 @group(0) @binding(5) var<storage, read_write> id: array<u32>;
-@group(0) @binding(6) var<uniform> splatCount: u32;
+@group(0) @binding(6) var<uniform> splat_count: u32;
 
 #dynamic @group(1) @binding(0) var<uniform> camera_data : CameraData;
 
@@ -25,7 +25,7 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
 {
     var gid = GlobalInvocationID.x;
 
-    if (gid < splatCount) {
+    if (gid < splat_count) {
         var covarianceFirst = covariance[gid*2];
         var covarianceSecond = covariance[gid*2+1];
 

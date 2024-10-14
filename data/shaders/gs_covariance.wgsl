@@ -65,7 +65,7 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID : vec3<u32>,
         
         var covarianceMatrix =  T * T_t;
 
-        covariance[GlobalInvocationID.x * 2] = vec3<f32>(covarianceMatrix[0][0],covarianceMatrix[1][0],covarianceMatrix[2][0]);
-        covariance[GlobalInvocationID.x * 2 + 1] = vec3<f32>(covarianceMatrix[1][1],covarianceMatrix[2][1],covarianceMatrix[2][2]);
+        covariance[GlobalInvocationID.x * 2] = vec3<f32>(covarianceMatrix[0][0], covarianceMatrix[1][0], covarianceMatrix[2][0]);
+        covariance[GlobalInvocationID.x * 2 + 1] = vec3<f32>(covarianceMatrix[1][1], covarianceMatrix[2][1], covarianceMatrix[2][2]);
     }
 }
