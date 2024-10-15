@@ -77,7 +77,8 @@ fn compute(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>,
     }
     workgroupBarrier();
 
-    for (var d: u32 = 1; d < n; d *= 2) // traverse down tree & build scan  {
+    for (var d: u32 = 1; d < n; d *= 2) // traverse down tree & build scan  
+    {
         offset >>= 1;
         if thid < d {
             var ai: u32 = offset * (2 * thid + 1)-1;
