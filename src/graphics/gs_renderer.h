@@ -46,7 +46,6 @@ public:
     void update(float delta_time) override;
     void render() override;
 
-    void sort_splats(GSNode* gs_node);
     void render_gs(WGPURenderPassEncoder render_pass, uint32_t camera_stride_offset = 0);
 
     Uniform& get_gs_camera_data_uniform() { return gs_camera_data_uniform; }

@@ -4,6 +4,7 @@
 
 #include "graphics/uniform.h"
 #include "graphics/pipeline.h"
+#include "graphics/kernels/radix_sort_kernel.h"
 
 #include "framework/nodes/node_3d.h"
 
@@ -21,7 +22,7 @@ class GSNode : public Node3D {
     uint32_t workgroup_size = 0;
 
     WGPUBuffer render_buffer = nullptr;
-    WGPUBuffer ids_buffers[2];
+    WGPUBuffer ids_buffer;
 
     // Render
     Uniform model_uniform;
@@ -38,27 +39,13 @@ class GSNode : public Node3D {
     WGPUBindGroup covariance_bindgroup;
 
     // Basis
-    WGPUBuffer distances_ping_pong[2];
+    WGPUBuffer distances_buffer;
 
     Uniform basis_distances_uniform;
     Uniform ids_basis_uniform;
     WGPUBindGroup basis_uniform_bindgroup;
 
-    // Sort
-    Uniform distances_uniforms[4];
-    Uniform ids_uniforms[4];
-    Uniform temp_uniform;
-    Uniform output_sum_array_uniform;
-    Uniform sum_array_uniform;
-    Uniform sum_size_uniform;
-
-    Uniform radix_id_uniform_buffers[16];
-    WGPUBindGroup radix_id_bingroups[16];
-
-    WGPUBindGroup scan_bindgroups[2];
-    WGPUBindGroup scan_sum_bindgroup;
-
-    WGPUBindGroup shuffle_bindgroups[2];
+    RadixSortKernel* radix_sort_kernel = nullptr;
 
     Shader* covariance_shader = nullptr;
     Pipeline covariance_pipeline;
@@ -80,12 +67,14 @@ public:
     virtual void render() override;
     virtual void update(float delta_time) override;
 
+    void sort(WGPUComputePassEncoder compute_pass);
+
     WGPUBuffer get_render_buffer() {
         return render_buffer;
     }
 
     WGPUBuffer get_ids_buffer() {
-        return ids_buffers[0];
+        return ids_buffer;
     }
 
     WGPUBindGroup get_render_bindgroup() {
@@ -95,13 +84,8 @@ public:
     void set_render_buffers(const std::vector<glm::vec4>& positions, const std::vector<glm::vec4>& colors);
     void set_covariance_buffers(const std::vector<glm::quat>& rotations, const std::vector<glm::vec4>& scales);
 
-    void calculate_basis();
+    void calculate_basis(WGPUComputePassEncoder compute_pass);
     void calculate_covariance();
-
-    WGPUBindGroup* get_scan_bindgroups() { return scan_bindgroups; }
-    WGPUBindGroup* get_radix_id_bindgroups() { return radix_id_bingroups; }
-    WGPUBindGroup get_scan_sum_bindgroup() { return scan_sum_bindgroup; }
-    WGPUBindGroup* get_shuffle_bindgroups() { return shuffle_bindgroups; }
 
     uint32_t get_splat_count();
     uint32_t get_padded_splat_count();

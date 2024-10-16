@@ -54,7 +54,7 @@ bool parse_ply(const char* ply_path, std::vector<Node*>& entities)
 
         glm::quat rotation = { rot1[i], rot2[i], rot3[i], rot0[i] };
         rotation = glm::normalize(rotation);
-        glm::vec4 scale =    { exp(scale0[i]), exp(scale1[i]), exp(scale2[i]), 0.0f };
+        glm::vec4 scale = { exp(scale0[i]), exp(scale1[i]), exp(scale2[i]), 0.0f };
 
         positions.push_back(position);
         colors.push_back(color);
