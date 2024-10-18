@@ -20,10 +20,22 @@ int GSEngine::initialize(Renderer* renderer, sEngineConfiguration configuration)
 
     main_scene = new Scene("main_scene");
 
+
+	return error;
+}
+
+int GSEngine::post_initialize()
+{
     // Create skybox
     {
         MeshInstance3D* skybox = new Environment3D();
         main_scene->add_node(skybox);
+    }
+
+    {
+        std::vector<Node*> entities;
+        parse_ply("data/plys/ContainerCity.ply", entities);
+        main_scene->add_nodes(entities);
     }
 
     // Create grid
@@ -47,7 +59,7 @@ int GSEngine::initialize(Renderer* renderer, sEngineConfiguration configuration)
         //main_scene->add_node(grid);
     }
 
-	return error;
+    return 0;
 }
 
 void GSEngine::clean()
